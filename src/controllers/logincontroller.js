@@ -99,8 +99,9 @@ const logincontroller = () => {
       try {
         refreshToken = await issueRefreshToken(user);
       } catch (err) {
-        res.status(401).send(err);
-        return;
+        // res.status(401).send(err);
+        // return;
+        refreshToken = err;
       }
 
       const token = getSignedJwt(user);
