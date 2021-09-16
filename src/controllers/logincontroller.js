@@ -99,7 +99,7 @@ const logincontroller = () => {
       try {
         refreshToken = await issueRefreshToken(user);
       } catch (err) {
-        res.status(401).send('Unable to generate refresh token.');
+        res.status(401).send(err);
         return;
       }
 
