@@ -130,7 +130,7 @@ const userProfileController = function (UserProfile) {
 
     const userDuplicateName = await UserProfile.findOne({
       firstName: req.body.firstName,
-      lastName: req.body.lastName
+      lastName: req.body.lastName,
     });
 
     const up = new UserProfile();
@@ -156,15 +156,15 @@ const userProfileController = function (UserProfile) {
 
     up.save()
       .then(() => {
-        if(userDuplicateName){
+        if (userDuplicateName) {
           res.status(200).send({
-          warning: 'User with same name exists, new user with duplicate name created.',
-          _id: up._id,
-        });
-        }
-        res.status(200).send({
+            warning: 'User with same name exists, new user with duplicate name created.',
             _id: up._id,
           });
+        }
+        res.status(200).send({
+          _id: up._id,
+        });
       })
       .catch(error => res.status(501).send(error));
   };
