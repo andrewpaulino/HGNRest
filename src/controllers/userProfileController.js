@@ -132,7 +132,7 @@ const userProfileController = function (UserProfile) {
       return;
     }
 
-    /** *
+    /**
      *  Turn on and off the duplicate phone number checker by changing
      *  the value of duplicatePhoneNumberCheck variable.
      */
@@ -191,6 +191,12 @@ const userProfileController = function (UserProfile) {
           _id: up._id,
         });
         // remove backend cache
+        const userCache = `{"isActive":${true},"weeklyComittedHours":${up.weeklyComittedHours},"_id":${up._id},"role":${up.role},"firstName":${up.firstName},"lastName":${up.lastName},"email":${up.email},"reactivationDate":${up.reactivationDate},"createdDate":${up.createdDate},"endDate":${up.endDate}`;
+        const allUserCache = JSON.parse(cache.getCache('allusers'));
+        console.log(allUserCache.length);
+        console.log(userCache);
+        // allUserCache.push(userCache);
+        // cache.setCache('allusers', JSON.stringify(allUserCache));
         cache.removeCache('allusers');
       })
       .catch(error => res.status(501).send(error));
@@ -315,8 +321,7 @@ const userProfileController = function (UserProfile) {
       });
       return;
     }
-    cache.removeCache(`user-${userId}`);
-    cache.removeCache('allusers');
+
     const user = await UserProfile.findById(userId);
 
     if (!user) {
@@ -358,6 +363,19 @@ const userProfileController = function (UserProfile) {
       );
     }
 
+    cache.removeCache(`user-${userId}`);
+    // // update allUsersCache(remove user)
+    const userData = JSON.parse(cache.getCache('allusers'));
+    const userIdx = userData.findIndex(users => users._id === userId);
+    // console.log(userData.length);
+    // console.log('findIdx');
+    // console.log(userIdx);
+    // console.log(userData[userIdx]);
+    userData.splice(userIdx, 1);
+    // console.log(userData.length);
+    cache.setCache('allusers', JSON.stringify(userData));
+    // cache.removeCache('allusers');
+
     await UserProfile.deleteOne({
       _id: userId,
     });
@@ -368,6 +386,8 @@ const userProfileController = function (UserProfile) {
     const userid = req.params.userId;
     if (cache.getCache(`user-${userid}`)) {
       const getData = JSON.parse(cache.getCache(`user-${userid}`));
+      // console.log('getData');
+      // console.log(getData);
       res.status(200).send(getData);
       return;
     }
@@ -569,7 +589,7 @@ const userProfileController = function (UserProfile) {
       });
       return;
     }
-    cache.removeCache(`user-${userId}`);
+
     UserProfile.findById(userId, 'isActive')
       .then((user) => {
         user.set({
@@ -583,6 +603,8 @@ const userProfileController = function (UserProfile) {
             res.status(200).send({
               message: 'status updated',
             });
+            cache.removeCache(`user-${userId}`);
+            cache.removeCache('allusers');
           })
           .catch((error) => {
             res.status(500).send(error);
