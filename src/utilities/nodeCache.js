@@ -39,10 +39,15 @@ const cache = function () {
     }
   }
 
+  function hasCache(key) {
+    return cacheStore.has(key);
+  }
+
   return {
     setCache,
     getCache,
     removeCache,
+    hasCache,
   };
 };
 

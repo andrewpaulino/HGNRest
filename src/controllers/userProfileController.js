@@ -216,7 +216,7 @@ const userProfileController = function (UserProfile) {
       return;
     }
     cache.removeCache(`user-${userid}`);
-    cache.removeCache('allusers');
+
     UserProfile.findById(userid, (err, record) => {
       if (err || !record) {
         res.status(404).send('No valid records found');
@@ -240,6 +240,16 @@ const userProfileController = function (UserProfile) {
 
       const infringmentAuthorizers = ['Manager', 'Administrator'];
 
+      // find userData in cache
+      const isUserInCache = cache.hasCache('allusers');
+      let allUserData;
+      let userData;
+      let userIdx;
+      if (isUserInCache) {
+        allUserData = JSON.parse(cache.getCache('allusers'));
+        userIdx = allUserData.findIndex(users => users._id === userid);
+        userData = allUserData[userIdx];
+      }
       // jobTitle,emailPubliclyAccessible,phoneNumberPubliclyAccessible fields
       record.jobTitle = req.body.jobTitle;
       record.emailPubliclyAccessible = req.body.emailPubliclyAccessible;
@@ -259,6 +269,11 @@ const userProfileController = function (UserProfile) {
       record.weeklySummaries = req.body.weeklySummaries;
       record.weeklySummariesCount = req.body.weeklySummariesCount;
       record.mediaUrl = req.body.mediaUrl;
+
+      if (isUserInCache) {
+        userData.firstName = record.firstName;
+        userData.lastName = record.lastName;
+      }
 
       if (isRequestorAdmin) {
         record.role = req.body.role;
@@ -282,8 +297,17 @@ const userProfileController = function (UserProfile) {
         record.createdDate = moment(req.body.createdDate).toDate();
         if (yearMonthDayDateValidator(req.body.endDate)) {
           record.endDate = moment(req.body.endDate).toDate();
+          userData.endDate = `'${record.endData.toISOString()}'`;
         } else {
           record.set('endDate', undefined, { strict: false });
+        }
+
+        if (isUserInCache) {
+          userData.role = record.role;
+          userData.weeklyComittedHours = record.weeklyComittedHours;
+          userData.email = record.email;
+          userData.isActive = record.isActive;
+          userData.createdDate = record.createdDate.toISOString();
         }
       }
       if (infringmentAuthorizers.includes(req.body.requestor.role)) {
@@ -303,6 +327,12 @@ const userProfileController = function (UserProfile) {
           res.status(200).json({
             _id: record._id,
           });
+
+          // update alluser cache if we have cache
+          if (isUserInCache) {
+            allUserData.splice(userIdx, 1, userData);
+            cache.setCache('allusers', JSON.stringify(allUserData));
+          }
         })
         .catch(error => res.status(400).send(error));
     });
@@ -365,10 +395,10 @@ const userProfileController = function (UserProfile) {
 
     cache.removeCache(`user-${userId}`);
     // update allUsersCache(remove user)
-    const userData = JSON.parse(cache.getCache('allusers'));
-    const userIdx = userData.findIndex(users => users._id === userId);
-    userData.splice(userIdx, 1);
-    cache.setCache('allusers', JSON.stringify(userData));
+    const allUserData = JSON.parse(cache.getCache('allusers'));
+    const userIdx = allUserData.findIndex(users => users._id === userId);
+    allUserData.splice(userIdx, 1);
+    cache.setCache('allusers', JSON.stringify(allUserData));
 
     await UserProfile.deleteOne({
       _id: userId,
@@ -380,8 +410,6 @@ const userProfileController = function (UserProfile) {
     const userid = req.params.userId;
     if (cache.getCache(`user-${userid}`)) {
       const getData = JSON.parse(cache.getCache(`user-${userid}`));
-      // console.log('getData');
-      // console.log(getData);
       res.status(200).send(getData);
       return;
     }
