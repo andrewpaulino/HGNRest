@@ -52,5 +52,5 @@ jobs:
         with:
           app-name: 'onecommunitytest'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_A0E26F2E4DA64520B7421F07AC9DEA66 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_87C62651753643C891F569C984BABD98 }}
           package: .
