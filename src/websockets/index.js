@@ -22,7 +22,7 @@ const logger = require('../startup/logger');
 export default async (expressServer) => {
   var timerService = await setupTimerService();
   var clients = {};
-
+ // trigger
   await Promise.all([
     redisClients.publisher.connect(),
     redisClients.subscriber.connect(),
