@@ -67,6 +67,13 @@ export default async (expressServer) => {
        // Grab userId from connection
       const userId = `${connectionRequest.userId}`;
 
+      // Set websocket connection to isAlive true
+      websocketConnection.isAlive = true;
+
+      // set handler
+      websocketConnection.on("pong", () => {
+        websocketConnection.isAlive = true;
+      });
       websocketConnection.on("message", message => handleMessage(message, { timerService, userId, websocketConnection }));
       websocketConnection.on("close", () => handleClose({
         timerService,
@@ -75,28 +82,6 @@ export default async (expressServer) => {
         interval,
         clients,
       }));
-      // Ping and ping method to keep websocket / client persistent
-      function keepConnectionAlive() {
-        function heartbeat() {
-          this.isAlive = true;
-        }
-
-        // Set websocket connection to isAlive true
-        websocketConnection.isAlive = true;
-
-        // set handler
-        websocketConnection.on("pong", heartbeat);
-
-        interval = setInterval(() => {
-          websocketServer.clients.forEach((ws) => {
-            if (ws.isAlive === false) return ws.terminate();
-            ws.isAlive = false;
-            ws.ping();
-          });
-        }, 30000);
-      }
-
-
       // Generate UUID to map between client / server
       const connectionKey = uuidv4();
 
@@ -116,12 +101,23 @@ export default async (expressServer) => {
         connectionKey,
         websocketConnection,
       });
-
-
-      // keep connection alive between client / server
-      keepConnectionAlive();
     },
   );
+
+  // Ping and ping method to keep websocket / client persistent
+  const interval = setInterval(() => {
+    websocketServer.clients.forEach((ws) => {
+      if (ws.isAlive === false) {
+        return ws.terminate();
+      }
+      ws.isAlive = false;
+      ws.ping();
+    });
+  }, 15000);
+
+  websocketServer.on('close', () => {
+    clearInterval(interval);
+  });
 
   return websocketServer;
 };
